@@ -30,7 +30,6 @@ pub use backend::{
     cell_sized::CellSized,
     cursor::CursorShape,
     dom::DomBackend,
-    selection::SelectionMode,
-    webgl2::{FontAtlasConfig, WebGl2Backend},
+    webgl2::{FontAtlasConfig, SelectionMode, WebGl2Backend},
 };
 pub use render::{WebEventHandler, WebRenderer};

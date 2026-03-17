@@ -30,6 +30,16 @@ use crate::{
 
 /// Default cell size used as a fallback when measurement fails.
 const DEFAULT_CELL_SIZE: (f64, f64) = (10.0, 20.0);
+const GRID_STYLE: &str =
+    "display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; width: 100%; height: 100%; overflow: hidden; font-family: 'Iosevka', monospace; font-size: 16px; line-height: 1; white-space: pre; letter-spacing: 0; word-spacing: 0; font-kerning: none; font-variant-ligatures: none; font-feature-settings: 'liga' 0, 'calt' 0;";
+const GRID_SELECTION_STYLE: &str =
+    "display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; width: 100%; height: 100%; overflow: hidden; font-family: 'Iosevka', monospace; font-size: 16px; line-height: 1; white-space: pre; letter-spacing: 0; word-spacing: 0; font-kerning: none; font-variant-ligatures: none; font-feature-settings: 'liga' 0, 'calt' 0; user-select: text; -webkit-user-select: text; cursor: text; touch-action: auto;";
+const PROBE_STYLE: &str =
+    "position: absolute; left: -10000px; top: 0; visibility: hidden; pointer-events: none; display: flex; flex-direction: column; margin: 0; padding: 0; border: 0; font-family: 'Iosevka', monospace; font-size: 16px; line-height: 1; white-space: pre; letter-spacing: 0; word-spacing: 0; font-kerning: none; font-variant-ligatures: none; font-feature-settings: 'liga' 0, 'calt' 0;";
+const PROBE_ROW_STYLE: &str =
+    "display: flex; flex: 0 0 auto; margin: 0; padding: 0; border: 0; white-space: pre; line-height: 1;";
+const PROBE_SAMPLE_STYLE: &str =
+    "display: block; margin: 0; padding: 0; border: 0; white-space: pre; line-height: 1; font-family: inherit; font-size: inherit; letter-spacing: 0; word-spacing: 0; font-kerning: none; font-variant-ligatures: none; font-feature-settings: 'liga' 0, 'calt' 0;";
 
 /// Options for the [`DomBackend`].
 #[derive(Debug, Default)]
@@ -208,15 +218,15 @@ impl DomBackend {
     /// `getBoundingClientRect()`, then removes the probe.
     fn measure_cell_size(document: &Document, parent: &Element) -> Result<(f64, f64), Error> {
         let probe = document.create_element("div")?;
-        probe.set_attribute("style", &terminal_probe_style())?;
+        probe.set_attribute("style", PROBE_STYLE)?;
 
         let row = document.create_element("div")?;
-        row.set_attribute("style", terminal_probe_row_style())?;
+        row.set_attribute("style", PROBE_ROW_STYLE)?;
 
         let sample = document.create_element("span")?;
         let sample_text = "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM";
         sample.set_text_content(Some(sample_text));
-        sample.set_attribute("style", &terminal_probe_sample_style())?;
+        sample.set_attribute("style", PROBE_SAMPLE_STYLE)?;
 
         row.append_child(&sample)?;
         probe.append_child(&row)?;
@@ -293,10 +303,15 @@ impl DomBackend {
         if self.options.mouse_selection() {
             self.grid.set_class_name("ratzilla-dom-selection-enabled");
         }
-        self.grid.set_attribute(
-            "style",
-            &terminal_grid_style(self.options.mouse_selection()),
-        )?;
+        self.grid
+            .set_attribute(
+                "style",
+                if self.options.mouse_selection() {
+                    GRID_SELECTION_STYLE
+                } else {
+                    GRID_STYLE
+                },
+            )?;
         self.cells.clear();
         Ok(())
     }
@@ -334,8 +349,7 @@ impl DomBackend {
 
 impl CellSized for DomBackend {
     fn cell_size_px(&self) -> (f32, f32) {
-        let dpr = get_device_pixel_ratio();
-        (self.cell_size.0 as f32 * dpr, self.cell_size.1 as f32 * dpr)
+        (self.cell_size.0 as f32, self.cell_size.1 as f32)
     }
 
     fn cell_size_css_px(&self) -> (f32, f32) {

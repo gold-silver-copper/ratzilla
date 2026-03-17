@@ -3,7 +3,6 @@ use crate::{
         cell_sized::CellSized,
         color::to_rgb,
         event_callback::{EventCallback, KEY_EVENT_TYPES},
-        selection::SelectionMode,
         utils::*,
     },
     error::Error,
@@ -11,6 +10,7 @@ use crate::{
     render::WebEventHandler,
     CursorShape,
 };
+pub use beamterm_renderer::SelectionMode;
 use beamterm_renderer::{
     mouse::*, CellData, CursorPosition, GlyphEffect, Terminal as Beamterm, Terminal,
 };
@@ -172,7 +172,7 @@ impl WebGl2BackendOptions {
     /// let options = WebGl2BackendOptions::new()
     ///     .font_atlas_config(FontAtlasConfig::dynamic(
     ///         // monospace is an implicit fallback font in browsers
-    ///         &["JetBrains Mono"],
+    ///         &["Iosevka"],
     ///         16.0
     ///     ));
     /// ```
@@ -659,10 +659,7 @@ impl WebGl2Backend {
         let beamterm = if let Some(mode) = options.mouse_selection_mode {
             beamterm.mouse_selection_handler(
                 MouseSelectOptions::new()
-                    .selection_mode(match mode {
-                        SelectionMode::Linear => beamterm_renderer::SelectionMode::Linear,
-                        SelectionMode::Block => beamterm_renderer::SelectionMode::Block,
-                    })
+                    .selection_mode(mode)
                     .trim_trailing_whitespace(true),
             )
         } else {
