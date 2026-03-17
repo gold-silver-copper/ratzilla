@@ -184,7 +184,7 @@ impl Canvas {
     }
 
     fn configure_text_context(context: &web_sys::CanvasRenderingContext2d) {
-        context.set_font("16px 'JetBrains Mono', monospace");
+        context.set_font("16px 'Iosevka', monospace");
         context.set_text_align("left");
         context.set_text_baseline("alphabetic");
         context.set_image_smoothing_enabled(false);
@@ -465,14 +465,14 @@ impl CanvasBackend {
         let pre = document.create_element("pre")?;
         pre.set_attribute(
             "style",
-            "margin: 0; padding: 0; border: 0; line-height: 1; font: 16px 'JetBrains Mono', monospace;",
+            "margin: 0; padding: 0; border: 0; line-height: 1; font: 16px 'Iosevka', monospace;",
         )?;
 
         let span = document.create_element("span")?;
         span.set_inner_html("\u{2588}");
         span.set_attribute(
             "style",
-            "display: inline-block; width: 1ch; line-height: 1; font: 16px 'JetBrains Mono', monospace;",
+            "display: inline-block; width: 1ch; line-height: 1; font: 16px 'Iosevka', monospace;",
         )?;
 
         pre.append_child(&span)?;
