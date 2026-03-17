@@ -149,6 +149,15 @@ impl SelectionState {
         self.drag_anchor = None;
         self.pending_copy = self.active.is_some();
     }
+
+    fn clear(&mut self) {
+        self.dragging = false;
+        self.drag_anchor = None;
+        self.pending_copy = false;
+        if self.active.take().is_some() {
+            self.bump();
+        }
+    }
 }
 
 /// Canvas renderer.
@@ -380,11 +389,9 @@ impl CanvasBackend {
             return;
         };
         let text = self.selected_text(range);
-        if text.is_empty() {
-            return;
+        if !text.is_empty() {
+            write_text_to_clipboard(&text);
         }
-
-        write_text_to_clipboard(&text);
     }
 
     fn measure_text_baseline(context: &web_sys::CanvasRenderingContext2d, cell_height: f64) -> f64 {
@@ -578,9 +585,7 @@ impl CanvasBackend {
             self.canvas.frame.height() as f64,
         );
         let (offset_x, offset_y) = self.content_offset();
-        self.canvas
-            .frame_context
-            .translate(offset_x, offset_y)?;
+        self.canvas.frame_context.translate(offset_x, offset_y)?;
 
         self.draw_background()?;
         self.draw_selection()?;
@@ -590,9 +595,7 @@ impl CanvasBackend {
             self.draw_debug()?;
         }
 
-        self.canvas
-            .frame_context
-            .translate(-offset_x, -offset_y)?;
+        self.canvas.frame_context.translate(-offset_x, -offset_y)?;
         self.present()?;
         Ok(())
     }
@@ -804,6 +807,18 @@ impl Backend for CanvasBackend {
     /// actually render the content to the screen.
     fn flush(&mut self) -> IoResult<()> {
         self.sync_canvas_size();
+
+        let should_copy = {
+            let mut selection_state = self.selection_state.borrow_mut();
+            let should_copy = selection_state.pending_copy;
+            selection_state.pending_copy = false;
+            should_copy
+        };
+        if should_copy {
+            self.copy_selection_to_clipboard();
+            self.selection_state.borrow_mut().clear();
+        }
+
         let selection_revision = self.selection_revision();
 
         if !self.initialized
@@ -814,16 +829,6 @@ impl Backend for CanvasBackend {
             self.prev_buffer = self.buffer.clone();
             self.initialized = true;
             self.selection_revision = selection_revision;
-        }
-
-        let should_copy = {
-            let mut selection_state = self.selection_state.borrow_mut();
-            let should_copy = selection_state.pending_copy;
-            selection_state.pending_copy = false;
-            should_copy
-        };
-        if should_copy {
-            self.copy_selection_to_clipboard();
         }
 
         Ok(())

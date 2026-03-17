@@ -286,10 +286,17 @@ impl DomBackend {
             .filter(|text: &String| !text.trim().is_empty())
     }
 
+    fn clear_selected_text() {
+        if let Some(selection) = window().and_then(|window| window.get_selection().ok().flatten()) {
+            let _ = selection.remove_all_ranges();
+        }
+    }
+
     fn copy_selected_text_to_clipboard() -> bool {
         match Self::selected_text() {
             Some(text) => {
                 write_text_to_clipboard(&text);
+                Self::clear_selected_text();
                 true
             }
             None => false,
@@ -303,15 +310,14 @@ impl DomBackend {
         if self.options.mouse_selection() {
             self.grid.set_class_name("ratzilla-dom-selection-enabled");
         }
-        self.grid
-            .set_attribute(
-                "style",
-                if self.options.mouse_selection() {
-                    GRID_SELECTION_STYLE
-                } else {
-                    GRID_STYLE
-                },
-            )?;
+        self.grid.set_attribute(
+            "style",
+            if self.options.mouse_selection() {
+                GRID_SELECTION_STYLE
+            } else {
+                GRID_STYLE
+            },
+        )?;
         self.cells.clear();
         Ok(())
     }

@@ -1,7 +1,4 @@
-use crate::{
-    backend::color::ansi_to_rgb,
-    error::Error,
-};
+use crate::{backend::color::ansi_to_rgb, error::Error};
 use compact_str::{format_compact, CompactString};
 use ratatui::{
     buffer::Cell,
@@ -111,7 +108,10 @@ pub(crate) fn get_cell_style_as_css(cell: &Cell, cell_size: (f64, f64)) -> Strin
         ""
     };
 
-    let sizing = terminal_cell_box_style(cell.symbol().width().max(1) as f64 * cell_size.0, cell_size.1);
+    let sizing = terminal_cell_box_style(
+        cell.symbol().width().max(1) as f64 * cell_size.0,
+        cell_size.1,
+    );
 
     format!("{fg_style} {bg_style} {modifier_style} {braille_style} {sizing}")
 }
