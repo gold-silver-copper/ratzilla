@@ -305,10 +305,11 @@ impl DomBackend {
 
     /// Reset the grid and clear the cells.
     fn reset_grid(&mut self) -> Result<(), Error> {
-        self.grid = self.document.create_element("div")?;
         self.grid.set_attribute("id", &self.options.grid_id())?;
         if self.options.mouse_selection() {
             self.grid.set_class_name("ratzilla-dom-selection-enabled");
+        } else {
+            self.grid.set_class_name("");
         }
         self.grid.set_attribute(
             "style",
@@ -318,6 +319,7 @@ impl DomBackend {
                 GRID_STYLE
             },
         )?;
+        self.grid.set_inner_html("");
         self.cells.clear();
         Ok(())
     }
@@ -387,7 +389,6 @@ impl Backend for DomBackend {
                 .get_element_by_id(&self.options.grid_id())
                 .is_some()
             {
-                self.grid_parent.set_inner_html("");
                 self.reset_grid()?;
 
                 // re-measure cell size and update grid dimensions
@@ -397,9 +398,11 @@ impl Backend for DomBackend {
                 self.sync_mouse_config();
             }
 
-            self.grid_parent
-                .append_child(&self.grid)
-                .map_err(Error::from)?;
+            if self.grid.parent_element().is_none() {
+                self.grid_parent
+                    .append_child(&self.grid)
+                    .map_err(Error::from)?;
+            }
             self.populate()?;
         }
 

@@ -259,6 +259,8 @@ pub struct CanvasBackend {
     selection_state: Rc<RefCell<SelectionState>>,
     /// Last observed selection state revision.
     selection_revision: u64,
+    /// Shared mouse coordinate configuration.
+    mouse_config: Rc<RefCell<MouseConfig>>,
     /// Mouse event callback handler.
     mouse_callback: Option<MouseCallbackState>,
     /// Key event callback handler.
@@ -269,6 +271,17 @@ pub struct CanvasBackend {
 type MouseCallbackState = EventCallback<web_sys::MouseEvent>;
 
 impl CanvasBackend {
+    fn sync_mouse_config(&self) {
+        let (grid_width, grid_height) = self.canvas_grid_size();
+        let (offset_x, offset_y) = self.content_offset();
+        let mut config = self.mouse_config.borrow_mut();
+        config.grid_width = grid_width as u16;
+        config.grid_height = grid_height as u16;
+        config.offset_x = Some(offset_x);
+        config.offset_y = Some(offset_y);
+        config.cell_dimensions = Some((self.cell_width, self.cell_height));
+    }
+
     fn grid_rect(&self, x: usize, y: usize, width: usize, height: usize) -> (f64, f64, f64, f64) {
         let left = (x as f64 * self.cell_width).floor();
         let top = (y as f64 * self.cell_height).floor();
@@ -459,6 +472,8 @@ impl CanvasBackend {
             self.prev_buffer = self.buffer.clone();
             self.initialized = false;
         }
+
+        self.sync_mouse_config();
     }
 
     fn measure_cell_size(parent: &web_sys::Element) -> Result<(f64, f64), Error> {
@@ -519,7 +534,11 @@ impl CanvasBackend {
         let canvas = Canvas::new(parent, width, height, Color::Black)?;
         let text_baseline_offset = Self::measure_text_baseline(&canvas.frame_context, cell_size.1);
         let buffer = get_sized_buffer_from_canvas(&canvas.inner, cell_size.0, cell_size.1);
-        Ok(Self {
+        let mouse_config = Rc::new(RefCell::new(MouseConfig::new(
+            buffer.first().map(|line| line.len()).unwrap_or(0) as u16,
+            buffer.len() as u16,
+        )));
+        let backend = Self {
             prev_buffer: buffer.clone(),
             buffer,
             initialized: false,
@@ -533,9 +552,12 @@ impl CanvasBackend {
             selection_mode: options.selection_mode,
             selection_state: Rc::new(RefCell::new(SelectionState::default())),
             selection_revision: 0,
+            mouse_config,
             mouse_callback: None,
             key_callback: None,
-        })
+        };
+        backend.sync_mouse_config();
+        Ok(backend)
     }
 
     /// Sets the background color of the canvas.
@@ -916,15 +938,8 @@ impl WebEventHandler for CanvasBackend {
         // Clear any existing handlers first
         self.clear_mouse_events();
 
-        // Get grid dimensions from the buffer
-        let grid_width = self.buffer[0].len() as u16;
-        let grid_height = self.buffer.len() as u16;
-
-        // Configure coordinate translation for canvas backend
-        let config = MouseConfig::new(grid_width, grid_height)
-            .with_offsets(self.content_offset().0, self.content_offset().1)
-            .with_cell_dimensions(self.cell_width, self.cell_height);
-
+        self.sync_mouse_config();
+        let config = self.mouse_config.clone();
         let element: web_sys::Element = self.canvas.inner.clone().into();
         let element_for_closure = element.clone();
         let selection_state = self.selection_state.clone();
@@ -935,6 +950,7 @@ impl WebEventHandler for CanvasBackend {
             element,
             MOUSE_EVENT_TYPES,
             move |event: web_sys::MouseEvent| {
+                let config = config.borrow();
                 let mouse_event = create_mouse_event(&event, &element_for_closure, &config);
                 if selection_mode.is_some() {
                     let point = SelectionPoint {

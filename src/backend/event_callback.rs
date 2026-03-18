@@ -106,13 +106,6 @@ impl MouseConfig {
         }
     }
 
-    /// Sets independent pixel offsets from the element edge.
-    pub fn with_offsets(mut self, offset_x: f64, offset_y: f64) -> Self {
-        self.offset_x = Some(offset_x);
-        self.offset_y = Some(offset_y);
-        self
-    }
-
     /// Sets the cell dimensions in pixels.
     pub fn with_cell_dimensions(mut self, width: f64, height: f64) -> Self {
         self.cell_dimensions = Some((width, height));
@@ -219,9 +212,9 @@ mod tests {
 
     #[test]
     fn test_mouse_config_builder() {
-        let config = MouseConfig::new(80, 24)
-            .with_offsets(5.0, 5.0)
-            .with_cell_dimensions(10.0, 19.0);
+        let mut config = MouseConfig::new(80, 24).with_cell_dimensions(10.0, 19.0);
+        config.offset_x = Some(5.0);
+        config.offset_y = Some(5.0);
 
         assert_eq!(config.grid_width, 80);
         assert_eq!(config.grid_height, 24);
